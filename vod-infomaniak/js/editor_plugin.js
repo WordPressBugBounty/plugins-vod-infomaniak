@@ -291,7 +291,7 @@ vodEndUpload = function(file,sKey){
 		url: jQuery("#url_ajax_import_video").val().replace("vodimportvideo", "vodimportvideoending"),
 		cache: false,
 		processData: false,
-		data: "iFolder="+jQuery('#uploadSelectFolder').val()+"&file="+file+"&sToken="+sKey,
+		data: "iFolder="+jQuery('#uploadSelectFolder').val()+"&file="+file+"&sToken="+sKey+"&nonce="+customData.nonce,
 		success: function(sToken){
 			try {				
 				jQuery('#VodEncodeS2').addClass('stepEncodeOK');
@@ -316,7 +316,7 @@ vodSynchroAjax = function(iPage,iTotalCounter){
 		url: jQuery("#url_ajax_synchro_video").val(),
 		cache: false,
 		processData: false,
-		data: "iTotalCounter="+iTotalCounter+"&iPage="+iPage,
+		data: "iTotalCounter="+iTotalCounter+"&iPage="+iPage+"&nonce="+customData.nonce,
 		dataType: "json",
 		success: function(result){
 			try {
@@ -346,7 +346,7 @@ vodCheckDispoPostImport = function(sUid,iFolder){
 		url: jQuery("#url_ajax_import_video").val().replace("vodimportvideo", "vodgetmediastate"),
 		cache: false,
 		processData: false,
-		data: "file="+sUid+"&iFolder="+iFolder,
+		data: "file="+sUid+"&iFolder="+iFolder+"&nonce="+customData.nonce,
 		dataType: "json",
 		success: function(result){
 			try {
@@ -409,7 +409,7 @@ vodCheckDispoPostUpload = function(file,sKey,folder,counter){
 		url: jQuery("#url_ajax_import_video").val().replace("vodimportvideo", "vodimportvideodispo"),
 		cache: false,
 		processData: false,
-		data: "iFolder="+folder+"&file="+file+"&sToken="+sKey+"&iCounter="+counter,
+		data: "iFolder="+folder+"&file="+file+"&sToken="+sKey+"&iCounter="+counter+"&nonce="+customData.nonce,
 		dataType: "json",
 		success: function(result){
 			try {

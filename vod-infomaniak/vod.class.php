@@ -5,7 +5,7 @@
 	 *
 	 * @author Infomaniak vod team
 	 * @link http://infomaniak.com
-	 * @version 1.5.9
+	 * @version 1.5.10
 	 * @copyright infomaniak.com
 	 */
 	define('VOD_RIGHT_CONTRIBUTOR', 1);
@@ -14,12 +14,14 @@
 	define('VOD_RIGHT_ADMIN', 4);
 
 	class EasyVod {
-		public $version = "1.5.9";
+		public $version = "1.5.10";
 		private $local_version;
 		private $plugin_url;
 		private $options;
 		private $key;
 		private $db;
+		private $auto_sync;
+		private $auto_sync_delay;
 
 		function __construct() {
 			$this->local_version = $this->version;
@@ -93,6 +95,13 @@
 			wp_enqueue_script('jquery-ui-dialog');
 			wp_enqueue_script('jquery-ui-tabs');
 			wp_enqueue_script('suggest');
+			wp_enqueue_script('my-ajax-script', plugins_url('vod-infomaniak/js/editor_plugin.js'), ['jquery'], null, true);
+
+			wp_localize_script('my-ajax-script', 'customData', [
+				'ajaxUrl' => admin_url('admin-ajax.php'),
+				'nonce'   => wp_create_nonce('my_action_nonce'),
+			]);
+
 
 		}
 
@@ -300,6 +309,10 @@
 		}
 
 		function importPostVideoDispo(){
+			if (!current_user_can('manage_options') || !wp_verify_nonce($_GET['nonce'], 'my_action_nonce')) {
+				die('error');
+			}
+
 			$aUpload = $this->db->get_upload_video($_REQUEST['sToken']);
 			$oApi = $this->getAPI();
 
@@ -334,7 +347,11 @@
 		}
 
 		function importPostVideoEnding(){
-			echo $this->db->insert_upload($_REQUEST['sToken'], $_REQUEST['file']);
+			if (current_user_can('manage_options') && wp_verify_nonce($_GET['nonce'], 'my_action_nonce')) {
+				echo $this->db->insert_upload($_REQUEST['sToken'], $_REQUEST['file']);
+			}else{
+				die('error');
+			}			
 		}
 
 		function importPostVideo() {
@@ -1326,6 +1343,7 @@
 		var $db_table_video;
 		var $db_table_playlist;
 		var $db_table_upload;
+		var $db_table_share;
 		var $db_version = "1.0.34";
 
 		function __construct() {
@@ -1675,7 +1693,7 @@
 
 		function insert_video($iVideo, $iFolder, $sName, $sServerCode, $sPath, $sExtension, $iDuration, $dUpload, $sFolderCode = "", $sVideoURL = "", $sImageURL = "", $sShareURL = "") {
 			global $wpdb;
-
+			$sVideoURL = $sVideoURL ?? '';
 			$wpdb->insert($this->db_table_video, array('iVideo' => $iVideo, 'iFolder' => $iFolder, 'sName' => $sName, 'sServerCode' => $sServerCode, 'sFolderCode' => $sFolderCode, 'sPath' => $sPath, 'sExtension' => $sExtension, 'iDuration' => $iDuration, 'dUpload' => $dUpload, 'sVideoUrlV2' => $sVideoURL, 'sImageUrlV2' => $sImageURL));
 
 			//$this->setShare($sServerCode,1,$sShareURL);	//util a ce moment la ?	//todo

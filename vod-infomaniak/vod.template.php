@@ -345,7 +345,6 @@
 		static function adminMenu($action_url, $options, $sUrl, $aFolders) {
 			?>
 			<h2><?php _e('Administration du plugin VOD', 'vod_infomaniak'); ?></h2>
-			<script type="text/javascript" charset="iso-8859-1" src="<?php echo plugins_url('vod-infomaniak/js/editor_plugin.js?3'); ?>"></script>
 
 			<form name="adminForm" action="<?php echo $action_url; ?>" method="post">
 				<input type="hidden" name="submitted" value="1"/>
@@ -620,7 +619,6 @@
 
 			<link rel='stylesheet' href='<?php echo plugins_url('vod-infomaniak/css/style.css?1'); ?>' media='all' />
 
-			<script type="text/javascript" charset="iso-8859-1" src="<?php echo plugins_url('vod-infomaniak/js/editor_plugin.js?3'); ?>"></script>
 			<h2><?php _e("Envoi d'une nouvelle video", 'vod_infomaniak'); ?></h2>
 			<p><?php _e("Ce plug-in vous permet d'ajouter de nouvelles videos directement depuis ce blog. Pour cela, vous n'avez qu'a choisir un dossier puis suivre les instructions", 'vod_infomaniak'); ?>
 				:</p>
