@@ -5,7 +5,7 @@
 	 *
 	 * @author Infomaniak vod team
 	 * @link http://infomaniak.com
-	 * @version 1.5.10
+	 * @version 1.5.11
 	 * @copyright infomaniak.com
 	 */
 	define('VOD_RIGHT_CONTRIBUTOR', 1);
@@ -14,7 +14,7 @@
 	define('VOD_RIGHT_ADMIN', 4);
 
 	class EasyVod {
-		public $version = "1.5.10";
+		public $version = "1.5.11";
 		private $local_version;
 		private $plugin_url;
 		private $options;
@@ -1693,7 +1693,7 @@
 
 		function insert_video($iVideo, $iFolder, $sName, $sServerCode, $sPath, $sExtension, $iDuration, $dUpload, $sFolderCode = "", $sVideoURL = "", $sImageURL = "", $sShareURL = "") {
 			global $wpdb;
-			$sVideoURL = $sVideoURL ?? '';
+			$sVideoURL = isset($sVideoURL) ? $sVideoURL : '';	//compat old php version
 			$wpdb->insert($this->db_table_video, array('iVideo' => $iVideo, 'iFolder' => $iFolder, 'sName' => $sName, 'sServerCode' => $sServerCode, 'sFolderCode' => $sFolderCode, 'sPath' => $sPath, 'sExtension' => $sExtension, 'iDuration' => $iDuration, 'dUpload' => $dUpload, 'sVideoUrlV2' => $sVideoURL, 'sImageUrlV2' => $sImageURL));
 
 			//$this->setShare($sServerCode,1,$sShareURL);	//util a ce moment la ?	//todo
