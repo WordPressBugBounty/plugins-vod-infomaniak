@@ -848,6 +848,7 @@
 			<div id="dialog-confirm-vod" title="<?php _e("Supprimer une video", 'vod_infomaniak'); ?>"
 			     style="display:none;">
 				<form id="adminFormVodDelete" name="adminForm" action="<?php echo $action_url; ?>" method="POST">
+					<?php wp_nonce_field('update_settings_action', 'plugin_nonce'); ?>
 					<input type="hidden" name="submitted" value="1"/>
 					<input type="hidden" name="sAction" value="delete"/>
 					<input type="hidden" id="dialog-confirm-id" name="dialog-confirm-id" value=""/>
@@ -875,6 +876,7 @@
 					<p>
 
 					<form name="adminForm" action="<?php echo $action_url; ?>" method="POST">
+						<?php wp_nonce_field('update_settings_action', 'plugin_nonce'); ?>
 						<input type="hidden" name="submitted" value="1"/>
 						<input type="hidden" name="sAction" value="rename"/>
 						<input type="hidden" id="dialog-modal-id" name="dialog-modal-id" value=""/>

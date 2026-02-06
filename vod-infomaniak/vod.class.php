@@ -5,7 +5,7 @@
 	 *
 	 * @author Infomaniak vod team
 	 * @link http://infomaniak.com
-	 * @version 1.5.11
+	 * @version 1.5.12
 	 * @copyright infomaniak.com
 	 */
 	define('VOD_RIGHT_CONTRIBUTOR', 1);
@@ -14,7 +14,7 @@
 	define('VOD_RIGHT_ADMIN', 4);
 
 	class EasyVod {
-		public $version = "1.5.11";
+		public $version = "1.5.12";
 		private $local_version;
 		private $plugin_url;
 		private $options;
@@ -1068,19 +1068,28 @@
 
 		function vod_management_menu() {
 			if ($this->plugin_ready()) {
+				
 
 				if (isset($_REQUEST['sAction'])) {
+
+
+					if (!isset($_POST['plugin_nonce']) || !wp_verify_nonce($_POST['plugin_nonce'], 'update_settings_action')) {
+						wp_die(__('Vérification de sécurité échouée', 'text-domain'));
+					}
+
 					if ($_REQUEST['sAction'] == "rename") {
 						$oVideo = $this->db->getVideo(intval($_POST['dialog-modal-id']));
 						if ($oVideo != false) {
 							$oApi = $this->getAPI();
-							$oApi->renameVideo($oVideo->iFolder, $oVideo->sServerCode, $_POST['dialog-modal-name']);
-							$this->db->rename_video(intval($_POST['dialog-modal-id']), $_POST['dialog-modal-name']);
 
+							$sName = sanitize_text_field($_POST['dialog-modal-name']);
+
+							$oApi->renameVideo($oVideo->iFolder, $oVideo->sServerCode, $sName);
+							$this->db->rename_video(intval($_POST['dialog-modal-id']), $sName);
 
 							echo "<script>";
 							echo "jQuery(document).ready(function() {";
-							echo "	openVodPopup('" . $oVideo->iVideo . "', '" . $_POST['dialog-modal-name'] . "','" . $oVideo->sPath . $oVideo->sServerCode . "', '" . strtolower($oVideo->sExtension) . "', '" . strtolower($oVideo->sAccess) . "', '" . $oVideo->sToken . "', '" . $oVideo->iFolder . "', '" . $oVideo->sImageUrlV2 . "', '" . $oVideo->sVideoUrlV2 . "', '" . $oVideo->sShareUrlV2 . "');";
+							echo "	openVodPopup('" . $oVideo->iVideo . "', '" . $sName . "','" . $oVideo->sPath . $oVideo->sServerCode . "', '" . strtolower($oVideo->sExtension) . "', '" . strtolower($oVideo->sAccess) . "', '" . $oVideo->sToken . "', '" . $oVideo->iFolder . "', '" . $oVideo->sImageUrlV2 . "', '" . $oVideo->sVideoUrlV2 . "', '" . $oVideo->sShareUrlV2 . "');";
 							echo "});";
 							echo "</script>";
 						}
