@@ -5,7 +5,7 @@
 	 *
 	 * @author Infomaniak vod team
 	 * @link http://infomaniak.com
-	 * @version 1.5.12
+	 * @version 1.5.13
 	 * @copyright infomaniak.com
 	 */
 	define('VOD_RIGHT_CONTRIBUTOR', 1);
@@ -14,7 +14,7 @@
 	define('VOD_RIGHT_ADMIN', 4);
 
 	class EasyVod {
-		public $version = "1.5.12";
+		public $version = "1.5.13";
 		private $local_version;
 		private $plugin_url;
 		private $options;
@@ -433,14 +433,47 @@
 			if ($tag != '' && strpos($the_content, "[" . $tag) !== false) {
 				preg_match_all("/\[$tag([^`]*?)\]([^`]*?)\[\/$tag\]/", $the_content, $matches, PREG_SET_ORDER);
 				foreach ($matches as $match) {
-					$the_content = preg_replace("/\[$tag([^`]*?)\]([^`]*?)\[\/$tag\]/", $this->tag($match[2], $match[1], '', '', $side), $the_content, 1);
+
+					$the_content = preg_replace("/\[$tag([^`]*?)\]([^`]*?)\[\/$tag\]/", $this->tag(sanitize_text_field($match[2]), $match[1], '', '', $side), $the_content, 1);
+
+						$allowed_tags = array(
+							'a' => array(
+								'href'  => true,
+								'class' => true,
+								'title' => true,
+								'target'=> true,
+								'rel'   => true,
+								),
+							'div' => array(
+								'class' => true,
+								'id'    => true,
+								'style' => true,
+								),
+							'iframe' => array(
+								'src'             => true,
+								'style'           => true,
+								'frameborder'     => true,
+								'allowfullscreen' => true,
+								'allow'           => true,
+								'width'           => true,
+								'height'          => true,
+								),
+							'p' => array(),
+							'br' => array(),
+							'strong' => array(),
+							'em' => array(),
+						);
+
+					$allowed_protocols = array('http', 'https');
+
+					$the_content = wp_kses($the_content,$allowed_tags,$allowed_protocols);	//
 				}
 			}
 			if (strpos($the_content, "[upload-vod") !== false) {
 				$tag = "upload-vod";
 				preg_match_all("/\[$tag([^`]*?)\]([^`]*?)\[\/$tag\]/", $the_content, $matches, PREG_SET_ORDER);
 				foreach ($matches as $match) {
-					$the_content = preg_replace("/\[$tag([^`]*?)\]([^`]*?)\[\/$tag\]/", $this->tag_upload($match[2], $match[1], '', '', $side), $the_content, 1);
+					$the_content = preg_replace("/\[$tag([^`]*?)\]([^`]*?)\[\/$tag\]/", $this->tag_upload(sanitize_text_field($match[2]), $match[1], '', '', $side), $the_content, 1);
 				}
 			}
 			return $the_content;
@@ -612,12 +645,12 @@
 			}
 			if (!empty($aTagParam['responsive']) && $aTagParam['responsive'] == "1") {
 				$html_tag = '<div style="width: 100%; padding-bottom: 56.25%; height: 0; overflow: hidden;position: relative">
-			   <iframe src="' . $video_url . '" width="100%" height="100%" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0" allowfullscreen crossorigin="anonymous" frameborder="0" allow="autoplay; fullscreen; picture-in-picture"></iframe>
+			   <iframe src="' . esc_url($video_url) . '" width="100%" height="100%" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0" allowfullscreen crossorigin="anonymous" frameborder="0" allow="autoplay; fullscreen; picture-in-picture"></iframe>
 				</div>';
 			}else{
-				$html_tag = '<div style="width:100%;max-width:'.$width.';">
-							<div class="videoWrapper" style="position: relative;padding-bottom: '.$iPercentRatio.'%;height: 0;">
-								<iframe style="position: absolute;top: 0;left: 0;width: 100%;height: 100%;" src="' . $video_url . '" frameborder="0" allowfullscreen></iframe>
+				$html_tag = '<div style="width:100%;max-width:'.esc_attr($width).';">
+							<div class="videoWrapper" style="position: relative;padding-bottom: '.esc_attr($iPercentRatio).'%;height: 0;">
+								<iframe style="position: absolute;top: 0;left: 0;width: 100%;height: 100%;" src="' . esc_url($video_url) . '" frameborder="0" allowfullscreen></iframe>
 							</div>
 						</div>';
 			}

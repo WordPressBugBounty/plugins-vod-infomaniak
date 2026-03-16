@@ -587,13 +587,13 @@
 
 				if ($api_response['bMigrated'] === "0"){
 					$version = 1;
-					$sSoap = "http://statslive.infomaniak.com/vod/api/vod_soap.wsdl";
+					$sSoap = "http://statslive.infomaniak.com/vod/api/vod_soap.wsdl?source=wp";
 				}else{
 					$version = 2;
 					if (intval($api_response['item']) < 10000){
-						$sSoap = "https://api.vod2.infomaniak.com/v1soap/soap/wsdl";
+						$sSoap = "https://api.vod2.infomaniak.com/v1soap/soap/wsdl?source=wp";
 					}else{
-						$sSoap = "https://api.vod2.infomaniak.com/v1soap/soap/wsdl2";
+						$sSoap = "https://api.vod2.infomaniak.com/v1soap/soap/wsdl2?source=wp";
 					}
 				}
 				if (empty(get_option( 'vod_api_version', false ))){
