@@ -5,7 +5,7 @@
 	 *
 	 * @author Infomaniak vod team
 	 * @link http://infomaniak.com
-	 * @version 1.5.13
+	 * @version 1.5.14
 	 * @copyright infomaniak.com
 	 */
 	define('VOD_RIGHT_CONTRIBUTOR', 1);
@@ -14,7 +14,7 @@
 	define('VOD_RIGHT_ADMIN', 4);
 
 	class EasyVod {
-		public $version = "1.5.13";
+		public $version = "1.5.14";
 		private $local_version;
 		private $plugin_url;
 		private $options;
@@ -435,38 +435,6 @@
 				foreach ($matches as $match) {
 
 					$the_content = preg_replace("/\[$tag([^`]*?)\]([^`]*?)\[\/$tag\]/", $this->tag(sanitize_text_field($match[2]), $match[1], '', '', $side), $the_content, 1);
-
-						$allowed_tags = array(
-							'a' => array(
-								'href'  => true,
-								'class' => true,
-								'title' => true,
-								'target'=> true,
-								'rel'   => true,
-								),
-							'div' => array(
-								'class' => true,
-								'id'    => true,
-								'style' => true,
-								),
-							'iframe' => array(
-								'src'             => true,
-								'style'           => true,
-								'frameborder'     => true,
-								'allowfullscreen' => true,
-								'allow'           => true,
-								'width'           => true,
-								'height'          => true,
-								),
-							'p' => array(),
-							'br' => array(),
-							'strong' => array(),
-							'em' => array(),
-						);
-
-					$allowed_protocols = array('http', 'https');
-
-					$the_content = wp_kses($the_content,$allowed_tags,$allowed_protocols);	//
 				}
 			}
 			if (strpos($the_content, "[upload-vod") !== false) {
