@@ -18,7 +18,16 @@
 	if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 		$aOptions = get_option('vod_infomaniak');
 
-		if ($aOptions['vod_api_callbackKey'] == $_REQUEST['key']) {
+			$sStoredKey = isset($aOptions['vod_api_callbackKey']) ? (string) $aOptions['vod_api_callbackKey'] : '';
+			$sGivenKey  = isset($_REQUEST['key']) ? (string) $_REQUEST['key'] : '';
+
+			// Refuser TOUT tant qu'aucune clé n'est configurée, et comparer en temps constant
+			if ($sStoredKey === '' || ! hash_equals($sStoredKey, $sGivenKey)) {
+				status_header(403);
+				die('bad key');
+			}
+	
+
 
 			if (get_option( 'vod_api_version', false ) == 2) {
 			
@@ -70,11 +79,11 @@
 				$sServerCode = sanitize_text_field($_POST['sFileServerCode']);
 
 				if (empty($iVideo) || empty($iFolder)) {
-					echo(__("Probleme avec les parametres"));
+					die(__("Probleme avec les parametres"));
 				}
 				$oFolder = $db->getFolder($iFolder);
 				if (empty($oFolder) || empty($oFolder->sName)) {
-					echo(__("Dossier inconnu"));
+					die(__("Dossier inconnu"));
 				}
 
 				$path_tmp = explode('/redirect/' . $aOptions['vod_api_id'] . "/", sanitize_text_field($_POST['files'][0]['sFileUrl']));
@@ -100,9 +109,6 @@
 					}
 				}
 			}
-		}else{
-			die ("bad key");
-		}
 	echo esc_html(file_get_contents("php://input"));
 	die();
 ?>

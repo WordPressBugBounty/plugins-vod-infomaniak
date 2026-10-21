@@ -145,7 +145,7 @@ Vod_importVideo = function () {
 			url: jQuery("#url_ajax_import_video").val(),
 			cache: false,
 			processData: false,
-			data: "iFolder="+jQuery('#uploadSelectFolder').val(),
+			data: "iFolder="+jQuery('#uploadSelectFolder').val()+"&nonce="+customData.nonce,
 			success: function(sToken){
 				try {
 					jQuery('#dialog-tabs').tabs( "disable", [0,1,2,3] );
@@ -187,7 +187,7 @@ downloadFromURL = function () {
 			url: jQuery("#url_ajax_import_video").val().replace("vodimportvideo", "vodimportvideofromurl"),
 			cache: false,
 			processData: false,
-			data: "iFolder="+jQuery('#uploadSelectFolder').val()+"&url="+jQuery("#sUrl").val(),
+			data: "iFolder="+jQuery('#uploadSelectFolder').val()+"&url="+jQuery("#sUrl").val()+"&nonce="+customData.nonce,
 			success: function(video){
 				try {
 					if (video == 'error'){
@@ -397,7 +397,7 @@ vodCheckDispoPostImport = function(sUid,iFolder){
  
 refreshImportTab = function(){
 	jQuery.ajax({
-		type: "post", url: "admin-ajax.php", data: { action: 'importvod'},
+		type: "post", url: "admin-ajax.php", data: { action: 'importvod', nonce: customData.nonce },
 		success: function (html) {
 			jQuery("#tabImport").html(html);
 		}
@@ -474,7 +474,7 @@ Vod_dialogValid = function () {
 					url: jQuery("#url_ajax_share_link").val(),
 					cache: false,
 					processData: false,
-					data: "iPlayer="+player+"&sVideo="+url,
+					data: "iPlayer="+player+"&sVideo="+url+"&nonce="+customData.nonce,
 					success: function(sToken){
 						try {
 							if( width != '' ){

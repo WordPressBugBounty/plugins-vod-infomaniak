@@ -61,30 +61,33 @@
 								</thead>
 								<tbody id="vod_infomaniak_videos_container">
 									<?php
-										if (empty($aVideos)) {
-											echo "<option value='0'>" . __("Aucune video disponible", 'vod_infomaniak') . "</option>";
-										} else {
-											foreach ($aVideos as $oVideo) {
-														if (get_option( 'vod_api_version', false ) == 1){
-															echo ("<tr class=\"vod_element_select\" onclick=\"Vod_selectVideo(this, '".$oVideo->sPath . $oVideo->sServerCode . "." . strtolower($oVideo->sExtension)."','".$oVideo->sToken ."','".$oVideo->iFolder ."');\"><td>;");
-
-															echo ("<img width='100' src='https://vod.infomaniak.com/redirect/".$options['vod_api_id'] . $oVideo->sPath . $oVideo->sServerCode.".mini.jpg' />");
-														}else{
-															echo ("<tr class=\"vod_element_select\" onclick=\"Vod_selectVideo(this, '". $oVideo->sServerCode ."','".$oVideo->sToken ."','".$oVideo->iFolder ."');\"><td>");
-
-															echo ("<img width='100' src='".$oVideo->sImageUrlV2."'/>");
-														}
-														?>
-													</td>
-													<td style="max-width:400px">
-														<?php echo ucfirst(stripslashes($oVideo->sName)); ?><br/><br/>
-														<img src="<?php echo plugins_url('vod-infomaniak/img/ico-folder-open-16x16.png'); ?>" style="vertical-align:bottom"/> <?php echo $oVideo->sPath; ?>
-													</td>
-													<td><?php echo $oVideo->dUpload; ?></td>
-												</tr>
-									<?php
-											}
+									if (empty($aVideos)) {
+										echo "<tr><td colspan='3'>" . esc_html__("Aucune video disponible", 'vod_infomaniak') . "</td></tr>";
+										}else{
+											foreach ($aVideos as $oVideo){
+												if (get_option('vod_api_version', false) == 1) {
+													$sClick = esc_js($oVideo->sPath . $oVideo->sServerCode . '.' . strtolower($oVideo->sExtension));
+													$sImg   = esc_url('https://vod.infomaniak.com/redirect/' . $options['vod_api_id'] . $oVideo->sPath . $oVideo->sServerCode . '.mini.jpg');
+												} else {
+													$sClick = esc_js($oVideo->sServerCode);
+													$sImg   = esc_url($oVideo->sImageUrlV2);
+												}
+										?>
+										<tr class="vod_element_select" onclick="Vod_selectVideo(this, '<?php echo $sClick; ?>','<?php echo esc_js($oVideo->sToken); ?>','<?php echo esc_js($oVideo->iFolder); ?>');">
+											<td>
+												<img width="100" src="<?php echo $sImg; ?>"/>
+											</td>
+											<td style="max-width:400px">
+												<?php echo esc_html(ucfirst($oVideo->sName)); ?><br/><br/>
+												<img src="<?php echo esc_url(plugins_url('vod-infomaniak/img/ico-folder-open-16x16.png')); ?>" style="vertical-align:bottom"/> <?php echo esc_html($oVideo->sPath); ?>
+											</td>
+											<td>
+												<?php echo esc_html($oVideo->dUpload); ?>
+											</td>
+										</tr>
+										<?php
 										}
+									}
 									?>
 								</tbody>
 							</table>
@@ -106,37 +109,31 @@
 								</thead>
 								<tbody id="vod_infomaniak_playlists_container">
 									<?php
-										if (empty($aPlaylists)) {
-											echo "<option value='0'>" . __("Aucune playlist de disponible", 'vod_infomaniak') . "</option>";
-										} else {
-											foreach ($aPlaylists as $oPlaylist) {
-												$sDuration = "";
-												if(!empty($oPlaylist->iTotalDuration)){
-													$iDuration = intval($oPlaylist->iTotalDuration/100);
-													$iHours = intval($iDuration/3600);
-													$iMinutes = intval($iDuration/60) % 60;
+									if (empty($aPlaylists)) {
+										echo "<tr><td colspan='4'>" . esc_html__("Aucune playlist de disponible", 'vod_infomaniak') . "</td></tr>";
+									} else {
+										foreach ($aPlaylists as $oPlaylist) {
+											$sDuration = "";
+												if (!empty($oPlaylist->iTotalDuration)) {
+													$iDuration = intval($oPlaylist->iTotalDuration / 100);
+													$iHours    = intval($iDuration / 3600);
+													$iMinutes  = intval($iDuration / 60) % 60;
 													$iSecondes = intval($iDuration) % 60;
-													$sDuration .= $iHours > 0 ? $iHours."h. " : '';
-													$sDuration .= $iMinutes > 0 ? $iMinutes."m. " : '';
-													$sDuration .= $iSecondes > 0 ? $iSecondes."s. " : '';
+													$sDuration .= $iHours   > 0 ? $iHours . "h. "   : '';
+													$sDuration .= $iMinutes > 0 ? $iMinutes . "m. " : '';
+													$sDuration .= $iSecondes > 0 ? $iSecondes . "s. " : '';
 												}
-									?>
-									
-												<tr class="vod_element_select" onclick="Vod_selectVideo(this, '<?php 
-												if (get_option( 'vod_api_version', false ) == 1) {
-													echo $oPlaylist->iPlaylistCode; 
-												}else{
-													echo $oPlaylist->sPlaylistUuid; 
-												}
-												?>','','');">
-													<td><?=ucfirst(stripslashes($oPlaylist->sPlaylistName));?></td>
-													<td><?=stripslashes($oPlaylist->sPlaylistDescription);?></td>
-													<td align="center"><?=$oPlaylist->iTotal;?></td>
-													<td align="right"><?=$sDuration;?></td>
-												</tr>
-									<?php
-											}
+												$sPlaylistId = (get_option('vod_api_version', false) == 1) ? $oPlaylist->iPlaylistCode : $oPlaylist->sPlaylistUuid;
+											?>
+											<tr class="vod_element_select" onclick="Vod_selectVideo(this, '<?php echo esc_js($sPlaylistId); ?>','','');">
+												<td><?php echo esc_html(ucfirst($oPlaylist->sPlaylistName)); ?></td>
+												<td><?php echo esc_html($oPlaylist->sPlaylistDescription); ?></td>
+												<td align="center"><?php echo esc_html($oPlaylist->iTotal); ?></td>
+												<td align="right"><?php echo esc_html($sDuration); ?></td>
+											</tr>
+										<?php
 										}
+									}
 									?>
 								</tbody>
 							</table>
@@ -145,14 +142,6 @@
 
 						<?php if ($bCanUpload) { 
 
-							header_remove('Access-Control-Allow-Origin');
-							header( "Access-Control-Allow-Origin: https://api.vod2.infomaniak.com" );
-							header( 'Access-Control-Allow-Credentials: true' );
-							header( 'Access-Control-Allow-Methods: GET, POST, OPTIONS' ); 
-							header( 'Access-Control-Allow-Headers: X-Requested-With, Content-Type');
-
-//							apply_filters( 'allowed_http_origins', array("https://api.vod2.infomaniak.com","http://toto.com" ));
-//							apply_filters( 'allowed_http_origin', "https://api.vod2.infomaniak.com", "https://api.vod2.infomaniak.com" );
 							?>
 							<div id="dialog-tab3" class="ui-tabs-panel">
 								<input type="hidden" id="url_ajax_import_video" value="<?php echo get_bloginfo('wpurl'); ?>/wp-admin/admin-ajax.php?action=vodimportvideo"/>
@@ -285,9 +274,10 @@
 									$('#vod_infomaniak_search_videos').unbind();
 									$('#vod_infomaniak_search_videos').keyup(function(){
 										$.ajax("<?php echo get_bloginfo('wpurl'); ?>/wp-admin/admin-ajax.php?action=vodsearchvideo",
-											{data:{
-												q:$('#vod_infomaniak_search_videos').val()
-											}
+										{data:{
+											q:$('#vod_infomaniak_search_videos').val(),
+											nonce:"<?php echo esc_js(wp_create_nonce('my_action_nonce')); ?>"
+										}
 										}).done(function(html){
 											$('#vod_infomaniak_videos_container').html(html);
 										});
@@ -297,7 +287,8 @@
 									$('#vod_infomaniak_search_playlists').keyup(function(){
 										$.ajax("<?php echo get_bloginfo('wpurl'); ?>/wp-admin/admin-ajax.php?action=vodsearchplaylist",
 											{data:{
-												q:$('#vod_infomaniak_search_playlists').val()
+												q:$('#vod_infomaniak_search_playlists').val(),
+												nonce:"<?php echo esc_js(wp_create_nonce('my_action_nonce')); ?>"
 											}
 										}).done(function(html){
 											$('#vod_infomaniak_playlists_container').html(html);
@@ -985,18 +976,42 @@
 										<img src="<?php echo plugins_url('vod-infomaniak/img/videofile.png'); ?>"
 										     style="vertical-align:bottom"/>
 									<?php } ?>
-									<a href="javascript:; return false;"
-									   onclick="openVodPopup('<?php echo $oVideo->iVideo; ?>', '<?php echo addslashes(htmlspecialchars($oVideo->sName)); ?>','<?php echo $oVideo->sPath . $oVideo->sServerCode; ?>', '<?php echo strtolower($oVideo->sExtension); ?>', '<?php echo strtolower($oVideo->sAccess); ?>', '<?php echo $oVideo->sToken; ?>', '<?php echo $oVideo->iFolder; ?>', '<?php echo $oVideo->sImageUrlV2; ?>', '<?php echo $oVideo->sVideoUrlV2; ?>', '<?php echo $oVideo->sShareUrlV2; ?>','<?php echo $oVideo->sServerCode; ?>'); return false;"><?php echo ucfirst(stripslashes($oVideo->sName)); ?></a>
+									<a href="javascript:;"
+										class="vod-popup"
+										data-video="<?php echo esc_attr($oVideo->iVideo); ?>"
+										data-name="<?php echo esc_attr($oVideo->sName); ?>"
+										data-path="<?php echo esc_attr($oVideo->sPath . $oVideo->sServerCode); ?>"
+										data-ext="<?php echo esc_attr(strtolower($oVideo->sExtension)); ?>"
+										data-access="<?php echo esc_attr(strtolower($oVideo->sAccess)); ?>"
+										data-token="<?php echo esc_attr($oVideo->sToken); ?>"
+										data-folder="<?php echo esc_attr($oVideo->iFolder); ?>"
+										data-img="<?php echo esc_url($oVideo->sImageUrlV2); ?>"
+										data-video-url="<?php echo esc_url($oVideo->sVideoUrlV2); ?>"
+										data-share="<?php echo esc_url($oVideo->sShareUrlV2); ?>"
+										data-server="<?php echo esc_attr($oVideo->sServerCode); ?>"
+									><?php echo esc_html(ucfirst($oVideo->sName)); ?></a>
+
 								</td>
 								<td><img
 										src="<?php echo plugins_url('vod-infomaniak/img/ico-folder-open-16x16.png'); ?>"
-										style="vertical-align:bottom"/> <?php echo $oVideo->sPath; ?></td>
-								<td><?php echo $oVideo->dUpload; ?></td>
+										style="vertical-align:bottom"/> <?php echo esc_html($oVideo->sPath); ?></td>
+								<td><?php echo esc_html($oVideo->dUpload); ?></td>
 								<td>
-									<a href="javascript:; return false;"
-									   onclick="openVodPopup('<?php echo $oVideo->iVideo; ?>', '<?php echo addslashes(htmlspecialchars($oVideo->sName)); ?>','<?php echo $oVideo->sPath . $oVideo->sServerCode . "', '" . strtolower($oVideo->sExtension); ?>', '<?php echo strtolower($oVideo->sAccess); ?>', '<?php echo $oVideo->sToken; ?>', '<?php echo $oVideo->iFolder; ?>', '<?php echo $oVideo->sImageUrlV2; ?>', '<?php echo $oVideo->sVideoUrlV2; ?>', '<?php echo $oVideo->sShareUrlV2; ?>','<?php echo  $oVideo->sServerCode; ?>'); return false;"><img
-											src="<?php echo plugins_url('vod-infomaniak/img/ico-information.png'); ?>"
-											alt="<?php _e("Information sur cette video", 'vod_infomaniak'); ?>"/></a>
+									<a href="javascript:;"
+									class="vod-popup"
+									data-video="<?php echo esc_attr($oVideo->iVideo); ?>"
+									data-name="<?php echo esc_attr($oVideo->sName); ?>"
+									data-path="<?php echo esc_attr($oVideo->sPath . $oVideo->sServerCode); ?>"
+									data-ext="<?php echo esc_attr(strtolower($oVideo->sExtension)); ?>"
+									data-access="<?php echo esc_attr(strtolower($oVideo->sAccess)); ?>"
+									data-token="<?php echo esc_attr($oVideo->sToken); ?>"
+									data-folder="<?php echo esc_attr($oVideo->iFolder); ?>"
+									data-img="<?php echo esc_url($oVideo->sImageUrlV2); ?>"
+									data-video-url="<?php echo esc_url($oVideo->sVideoUrlV2); ?>"
+									data-share="<?php echo esc_url($oVideo->sShareUrlV2); ?>"
+									data-server="<?php echo esc_attr($oVideo->sServerCode); ?>"
+									><img src="<?php echo esc_url(plugins_url('vod-infomaniak/img/ico-information.png')); ?>"
+									alt="<?php echo esc_attr__('Information sur cette video', 'vod_infomaniak'); ?>"/></a>
 
 									<?php if (get_option( 'vod_api_version', false ) == 1) {?>
 									<a href="https://statslive.infomaniak.com/vod/videoDetail.php/g<?php echo $aOptions['vod_api_group']; ?>s7i<?php echo $aOptions['vod_api_icodeservice']; ?>?iFileCode=<?php echo $oVideo->iVideo; ?>"
@@ -1031,6 +1046,15 @@
 				?>
 				</tbody>
 				<script>
+			
+					jQuery(function ($) {
+						$('.vod-popup').on('click', function (e) {
+							e.preventDefault();
+							var d = this.dataset;
+							openVodPopup(d.video, d.name, d.path, d.ext, d.access, d.token,d.folder, d.img, d.videoUrl, d.share, d.server);
+						});
+					});
+
 					confirmVodDelete = function (iVideo, sTitle) {
 						jQuery("#dialog-confirm-id").val(iVideo);
 						jQuery("#dialog-confirm-title").text(sTitle);
@@ -1050,7 +1074,7 @@
 						});
 					}
 					openVodPopup = function (iVideo, title, url, sExtension, sAccess, sToken, iFolder, sImageUrlV2, sVideoUrlV2, sShareUrlV2, sServerCode) {
-						var urlComplete = "<?php echo $aOptions['vod_api_id'];?>" + url;
+						var urlComplete = "<?php echo esc_js($aOptions['vod_api_id']);?>" + url;
 						var sParam = "";
 						if (sToken != "") {
 							//sParam = "?sKey=" + sToken + "&ees";
@@ -1081,8 +1105,8 @@
 							//}
 							jQuery("#dialog-modal-balise").val("[" + sBalise + "]" + sServerCode +"[/vod]");
 						}	
-						jQuery("#dialog-modal-admin").attr("href", "https://statslive.infomaniak.com/vod/videoDetail.php/g<?php echo $aOptions['vod_api_group'];?>s7i<?php echo $aOptions['vod_api_icodeservice'];?>?iFileCode=" + iVideo);
-						jQuery("#dialog-modal-admin2").attr("href", "https://statslive.infomaniak.com/vod/videoDetail.php/g<?php echo $aOptions['vod_api_group'];?>s7i<?php echo $aOptions['vod_api_icodeservice'];?>?iFileCode=" + iVideo + "&tab=2");
+						jQuery("#dialog-modal-admin").attr("href", "https://statslive.infomaniak.com/vod/videoDetail.php/g<?php echo esc_js($aOptions['vod_api_group']);?>s7i<?php echo esc_js($aOptions['vod_api_icodeservice']);?>?iFileCode=" + iVideo);
+						jQuery("#dialog-modal-admin2").attr("href", "https://statslive.infomaniak.com/vod/videoDetail.php/g<?php echo esc_js($aOptions['vod_api_group']);?>s7i<?php echo esc_js($aOptions['vod_api_icodeservice']);?>?iFileCode=" + iVideo + "&tab=2");
 
 						if (<?php echo get_option( 'vod_api_version', false ) ?> == 2){
 							jQuery("#dialog-modal-video").attr("src", sShareUrlV2 + sParam);
@@ -1092,11 +1116,11 @@
 
 						textAccess = "";
 						if (sAccess != '' && sAccess != 'all') {
-							textAccess += "<?php _e("Video Geolocalise",'vod_infomaniak'); ?>";
+							textAccess += "<?php echo esc_js(__("Video Geolocalise",'vod_infomaniak')); ?>";
 						}
 						if (sToken != "") {
 							if (textAccess != "") textAccess += ", ";
-							textAccess += "<?php _e("Securise avec un token",'vod_infomaniak'); ?>";
+							textAccess += "<?php echo esc_js(__("Securise avec un token",'vod_infomaniak')); ?>";
 						}
 						if (textAccess != "") {
 							jQuery("#dialog-modal-access").text(textAccess);
@@ -1160,9 +1184,9 @@
                             ?>
 							<tr>
 								<td><img src="<?php echo plugins_url('vod-infomaniak/img/ico-display-list.png'); ?>"
-								         style="vertical-align:bottom; padding: 0px 5px;"/> <?php echo ucfirst($oPlaylist->sPlaylistName); ?>
+								         style="vertical-align:bottom; padding: 0px 5px;"/> <?php echo esc_html(ucfirst($oPlaylist->sPlaylistName)); ?>
 								</td>
-								<td><?php echo !empty($oPlaylist->sPlaylistDescription) ? ucfirst($oPlaylist->sPlaylistDescription): "&nbsp;"; ?> </td>
+								<td><?php echo !empty($oPlaylist->sPlaylistDescription) ? esc_html(ucfirst($oPlaylist->sPlaylistDescription)): "&nbsp;"; ?> </td>
 								<td><?php echo $oPlaylist->iTotal; ?></td>
 								<?php
 									$duration = intval($oPlaylist->iTotalDuration / 100);
@@ -1176,7 +1200,7 @@
 									$str .= $sec > 0 ? $sec . "s." : '';
 								?>
 								<td><?php echo !empty($str) ? $str : "&nbsp;"; ?> </td>
-								<td><?php echo $oPlaylist->sMode; ?></td>
+								<td><?php echo esc_html($oPlaylist->sMode); ?></td>
 								<td><?php echo $oPlaylist->dCreated; ?></td>
 								<td>
 									<?php if (get_option( 'vod_api_version', false ) == 1) {	//todo, recup le code playlist en v2 pour mettre bon lien ?>
@@ -1208,45 +1232,43 @@
 		<?php
 		}
 
-		static function buildPagination($iCurrentPage, $iLimit, $iTotal) {
-			$iTotalPage = $iTotal;
+		static function buildPagination($iCurrentPage, $iLimit, $iTotal){
 			$iPageTotal = floor(($iTotal - 1) / $iLimit) + 1;
 			$page_list = "";
+			$sBase = esc_url(add_query_arg('page', 'vod-infomaniak/vod.class.php', admin_url('admin.php')));
+			$link = function ($iPage, $sLabel, $sTitle) use ($sBase) {
+				return '<a href="' . $sBase . '&p=' . intval($iPage) . '" title="' . esc_attr($sTitle) . '">' . esc_html($sLabel) . '</a> ';
+			};
 
-			if (($iCurrentPage != 1) && ($iCurrentPage)) {
-				$page_list .= "  <a href=\" " . $_SERVER['PHP_SELF'] . "?page=vod-infomaniak/vod.class.php&p=1\" title=\"First Page\">«</a> ";
+			if (($iCurrentPage != 1) && ($iCurrentPage)){
+				$page_list .= $link(1, '«', 'First Page');
 			}
-
-			if (($iCurrentPage - 1) > 0) {
-				$page_list .= "<a href=\" " . $_SERVER['PHP_SELF'] . "?page=vod-infomaniak/vod.class.php&p=" . ($iCurrentPage - 1) . "\" title=\"Previous Page\"><</a> ";
+			if (($iCurrentPage - 1) > 0){
+				$page_list .= $link($iCurrentPage - 1, '<', 'Previous Page');
 			}
-
 			for ($i = 1; $i <= $iPageTotal; $i++) {
 				if ($i <= 2 || $i > $iPageTotal - 2 || ($i >= $iCurrentPage - 2 && $i <= $iCurrentPage + 2)) {
 					if ($i == $iCurrentPage) {
-						$page_list .= "<b>" . $i . "</b>";
-					} else {
-						$page_list .= "<a href=\" " . $_SERVER['PHP_SELF'] . "?page=vod-infomaniak/vod.class.php&p=" . $i . "\" title=\"Page " . $i . "\">" . $i . "</a>";
+						$page_list .= "<b>" . intval($i) . "</b> ";
+					}else{
+						$page_list .= $link($i, $i, 'Page ' . $i);
 					}
-					$page_list .= " ";
-				} else {
+				}else{
 					if ($i == 3 || $i == $iPageTotal - 2) {
 						$page_list .= "... ";
-					}
+						}
 				}
 			}
-
-			if (($iCurrentPage + 1) <= $iPageTotal) {
-				$page_list .= "<a href=\"" . $_SERVER['PHP_SELF'] . "?page=vod-infomaniak/vod.class.php&p=" . ($iCurrentPage + 1) . "\" title=\"Next Page\">></a> ";
+			if (($iCurrentPage + 1) <= $iPageTotal){
+				$page_list .= $link($iCurrentPage + 1, '>', 'Next Page');
 			}
-
-			if (($iCurrentPage != $iPageTotal) && ($iPageTotal != 0)) {
-				$page_list .= "<a href=\"" . $_SERVER['PHP_SELF'] . "?page=vod-infomaniak/vod.class.php&p=" . $iPageTotal . "\" title=\"Last Page\">»</a> ";
+			if (($iCurrentPage != $iPageTotal) && ($iPageTotal != 0)){
+				$page_list .= $link($iPageTotal, '»', 'Last Page');
 			}
-			$page_list .= "</td>\n";
 
 			return $page_list;
 		}
+
 	}
 
 ?>

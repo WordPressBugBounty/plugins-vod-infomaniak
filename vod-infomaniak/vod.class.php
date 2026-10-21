@@ -5,7 +5,7 @@
 	 *
 	 * @author Infomaniak vod team
 	 * @link http://infomaniak.com
-	 * @version 1.5.14
+	 * @version 1.5.15
 	 * @copyright infomaniak.com
 	 */
 	define('VOD_RIGHT_CONTRIBUTOR', 1);
@@ -14,7 +14,7 @@
 	define('VOD_RIGHT_ADMIN', 4);
 
 	class EasyVod {
-		public $version = "1.5.14";
+		public $version = "1.5.15";
 		private $local_version;
 		private $plugin_url;
 		private $options;
@@ -39,10 +39,31 @@
 				$GLOBALS['encryptIv'] = '4zEz7z5!4a1s2e$s';
 			}
 		}
+
+		/**
+		 * Garde commune pour les endpoints AJAX : nonce + capability.
+		 * $sCan : clé isCurrentUserCan() ('gestion','importation','player','playlist','configuration')
+		 *         ou 'manage_options' pour les actions admin critiques.
+		 */
+		private function ajaxGuard($sCan) {
+			if (!isset($_REQUEST['nonce']) || !wp_verify_nonce($_REQUEST['nonce'], 'my_action_nonce')) {
+				status_header(403);
+				die('error');
+			}
+			$bOk = ($sCan === 'manage_options') ? current_user_can('manage_options') : $this->isCurrentUserCan($sCan);
+			if (!$bOk) {
+				status_header(403);
+				die('error');
+			}
+		}
+
 		function add_filters_and_hooks() {
 
 			register_activation_hook(__FILE__, array(&$this, 'install_db'));
 			add_action('plugins_loaded', array(&$this, 'update_db'));
+			
+			// Garantit qu'une clé de callback forte existe (rattrape les installs déjà en place)
+			add_action('admin_init', array(&$this, 'ensure_callback_key'));
 
 			load_plugin_textdomain('vod_infomaniak', FALSE, basename(dirname(__FILE__)) . '/languages');
 
@@ -152,7 +173,7 @@
 				case 'administrator':
 					return VOD_RIGHT_ADMIN;
 				default:
-					return VOD_RIGHT_CONTRIBUTOR;
+					return 0;
 			}
 		}
 
@@ -169,6 +190,14 @@
 				$this->options['vod_api_lastUpdate'] = 0;	//set last update to 0 to force all api upload
 				$bForceAllSynchro = true;
 				//$oApi->bForceUpdate = true;
+			}
+		}
+
+		function ensure_callback_key() {
+			$aOptions = get_option('vod_infomaniak', array());
+			if (empty($aOptions['vod_api_callbackKey'])) {
+				$aOptions['vod_api_callbackKey'] = wp_generate_password(40, false);
+				update_option('vod_infomaniak', $aOptions);
 			}
 		}
 
@@ -203,12 +232,14 @@
 		}
 
 		function shareLink() {
+			$this->ajaxGuard('player');
 			die ($this->getOrSetShare($_REQUEST['sVideo'], $_REQUEST['iPlayer']));
 		}
 
 
 
 		function getSynchroVideo() {
+			$this->ajaxGuard('manage_options');
 			$oApi = $this->getAPI();
 
 			if ($_REQUEST['iTotalCounter'] == 0){
@@ -255,6 +286,7 @@
 		}
 
 		function getMediaState($sUid){
+			$this->ajaxGuard('importation');
 			$aUpload->sState = 'START';
 			$sServerCode = $_REQUEST['file'];
 			$aUpload->iVideo = $_REQUEST['file'];
@@ -293,6 +325,7 @@
 		}
 
 		function importVideoFromUrl(){
+			$this->ajaxGuard('manage_options');
 			$oApi = $this->getAPI();
 			$sUrl = esc_url_raw($_REQUEST['url']);
 
@@ -309,9 +342,7 @@
 		}
 
 		function importPostVideoDispo(){
-			if (!current_user_can('manage_options') || !wp_verify_nonce($_GET['nonce'], 'my_action_nonce')) {
-				die('error');
-			}
+			$this->ajaxGuard('importation');
 
 			$aUpload = $this->db->get_upload_video($_REQUEST['sToken']);
 			$oApi = $this->getAPI();
@@ -347,7 +378,7 @@
 		}
 
 		function importPostVideoEnding(){
-			if (current_user_can('manage_options') && wp_verify_nonce($_GET['nonce'], 'my_action_nonce')) {
+			if (current_user_can('manage_options') && wp_verify_nonce($_REQUEST['nonce'], 'my_action_nonce')){
 				echo $this->db->insert_upload($_REQUEST['sToken'], $_REQUEST['file']);
 			}else{
 				die('error');
@@ -374,6 +405,7 @@
 		}
 
 		function searchPlaylist() {
+			$this->ajaxGuard('playlist');
 			$aResult = $this->db->search_playlist($_REQUEST['q'], 100);
 			$tReturn = "";
 			if (!empty($aResult)) {
@@ -400,26 +432,29 @@
 			echo $tReturn;
 			die();
 		}
-
+	
 		function searchVideo() {
+			$this->ajaxGuard('gestion');
 			$aResult = $this->db->search_videos($_REQUEST['q'], 12, $this->options['vod_filter_folder']);
 			$tReturn = "";
-			if (!empty($aResult)) {
-				foreach ($aResult as $oVideo) {
-					if (get_option( 'vod_api_version', false ) == 1){
-						$tReturn .= '<tr class="vod_element_select" onclick="Vod_selectVideo(this, \''.$oVideo->sPath . $oVideo->sServerCode . '.' . strtolower($oVideo->sExtension).'\',\''.$oVideo->sToken.'\',\''.$oVideo->iFolder.'\');">';
-							$tReturn .= '<td><img width="100" src="http://vod.infomaniak.com/redirect/' . $this->options['vod_api_id'] . $oVideo->sPath . $oVideo->sServerCode . '.mini.jpg"/></td>';
-					}else{
-						$tReturn .= ("<tr class=\"vod_element_select\" onclick=\"Vod_selectVideo(this, '". $oVideo->sServerCode ."','".$oVideo->sToken ."','".$oVideo->iFolder ."');\"><td><img width='100' src='".$oVideo->sImageUrlV2."'/></td>");
-					}
 
+			if (!empty($aResult)){
+				foreach ($aResult as $oVideo){
+					if (get_option('vod_api_version', false) == 1){
+						$sClickV1 = esc_js($oVideo->sPath . $oVideo->sServerCode . '.' . strtolower($oVideo->sExtension));
+						$tReturn .= '<tr class="vod_element_select" onclick="Vod_selectVideo(this, \'' . $sClickV1 . '\',\'' . esc_js($oVideo->sToken) . '\',\'' . esc_js($oVideo->iFolder) . '\');">';
+						$tReturn .= '<td><img width="100" src="' . esc_url('https://vod.infomaniak.com/redirect/' . $this->options['vod_api_id'] . $oVideo->sPath . $oVideo->sServerCode . '.mini.jpg') . '"/></td>';
+					}else{
+						$tReturn .= '<tr class="vod_element_select" onclick="Vod_selectVideo(this, \'' . esc_js($oVideo->sServerCode) . '\',\'' . esc_js($oVideo->sToken) . '\',\'' . esc_js($oVideo->iFolder) . '\');">';
+						$tReturn .= '<td><img width="100" src="' . esc_url($oVideo->sImageUrlV2) . '"/></td>';
+					}
 					$tReturn .= '<td>';
-						$tReturn .= ucfirst(stripslashes($oVideo->sName));
-						$tReturn .= '<br/><br/>';
-						$tReturn .= '<img src="'.plugins_url('vod-infomaniak/img/ico-folder-open-16x16.png').'" style="vertical-align:bottom"/>';
-						$tReturn .= $oVideo->sPath;
+					$tReturn .= esc_html(ucfirst($oVideo->sName));
+					$tReturn .= '<br/><br/>';
+					$tReturn .= '<img src="' . esc_url(plugins_url('vod-infomaniak/img/ico-folder-open-16x16.png')) . '" style="vertical-align:bottom"/>';
+					$tReturn .= esc_html($oVideo->sPath);
 					$tReturn .= '</td>';
-					$tReturn .= '<td>'.$oVideo->dUpload.'</td>';
+					$tReturn .= '<td>' . esc_html($oVideo->dUpload) . '</td>';
 				}
 			}else{
 				$tReturn .= "<tr><td colspan='3'>Aucune Resultat</td></tr>";
@@ -901,7 +936,7 @@
 				$bResult = false;
 
 				if (empty($this->options['vod_api_callbackKey'])) {
-					$this->options['vod_api_callbackKey'] = sha1(time() * rand());
+					$this->options['vod_api_callbackKey'] = wp_generate_password(40, false);
 				}
 				if (empty($this->options['vod_api_c'])) {
 					$this->options['vod_api_c'] = substr(sha1(time() * rand()), 0, 20);
@@ -974,7 +1009,6 @@
 									if (get_option( 'vod_api_version', false ) == 2) { 
 										$this->db->insert_video($oVideo['iFileCode'], $oVideo['iFolder'], $oVideo['sFileName'], $oVideo['sFileServerCode'], $oVideo['folderUuid'], $oVideo['aEncodes'][0]['sPath'], $oVideo['aEncodes'][0]['eConteneur'], $oVideo['fFileDuration'], $oVideo['dFileUpload'], $oVideo['aEncodes'][0]['sVideoURL'], $oVideo['aEncodes'][0]['sImageURL'], $sShareURL);
 									}else{
-										var_dump($oVideo);
 										$this->db->insert_video($oVideo['iFileCode'], $oVideo['iFolder'], $oVideo['sFileName'], $oVideo['sFileServerCode'], $oVideo['aEncodes'][0]['sPath'], $oVideo['aEncodes'][0]['eConteneur'], $oVideo['fFileDuration'], $oVideo['dFileUpload']);
 									}
 								}
@@ -1197,6 +1231,7 @@
 		}
 
 		function printLastImport() {
+			$this->ajaxGuard('gestion');
 			echo $this->getLastImport();
 			die();
 		}
@@ -1490,7 +1525,7 @@
 
 		function insert_player($iPlayer, $sName, $iWidth, $iHeight, $bStart, $bLoop, $dEdit, $bSwitchQuality, $iVersion = 1) {
 			global $wpdb;
-			$wpdb->insert($this->db_table_player, array('iPlayer' => $iPlayer, 'sName' => $sName, 'iWidth' => $iWidth, 'iHeight' => $iHeight, 'bAutoPlay' => $bStart, 'bLoop' => $bLoop, 'dEdit' => $dEdit, 'bSwitchQuality' => $bSwitchQuality, 'iVersion' => $iVersion));
+			$wpdb->replace($this->db_table_player, array('iPlayer' => $iPlayer, 'sName' => $sName, 'iWidth' => $iWidth, 'iHeight' => $iHeight, 'bAutoPlay' => $bStart, 'bLoop' => $bLoop, 'dEdit' => $dEdit, 'bSwitchQuality' => $bSwitchQuality, 'iVersion' => $iVersion));
 		}
 
 		function count_player() {
@@ -1612,24 +1647,42 @@
 
 		function search_videos($sTerm, $iLimit = 6, $sFilter = "") {
 			global $wpdb;
+
+			$sLike   = '%' . $wpdb->esc_like($sTerm) . '%';
+			$aArgs   = array($sLike, $sLike);
+			$sWhereFolder = '';
+
 			if (!empty($sFilter)) {
-				$sql = $wpdb->prepare("SELECT iFolder FROM " . $this->db_table_folder . " WHERE sPath LIKE %s ORDER BY sPath", $sFilter . '%');
-				$aFolders = $wpdb->get_results($sql);
-				$aFoldersList = array();
-				foreach ($aFolders as $oFolder) {
-					$aFoldersList[] = $oFolder->iFolder;
+				$aFoldersList = $wpdb->get_col($wpdb->prepare(
+					"SELECT iFolder FROM " . $this->db_table_folder . " WHERE sPath LIKE %s",
+				$wpdb->esc_like($sFilter) . '%'
+				));
+				$aFoldersList = array_map('intval', $aFoldersList);
+
+				if (empty($aFoldersList)) {
+					return array(); // aucun dossier correspondant => aucun résultat
 				}
-				$sql = $wpdb->prepare("SELECT video.*, folder.sAccess, folder.sToken FROM " . $this->db_table_video . " as video
-			INNER JOIN " . $this->db_table_folder . " as folder ON video.iFolder = folder.iFolder
-			WHERE (video.sName LIKE %s OR sServerCode LIKE %s) AND video.iFolder IN ( " . implode(",", $aFoldersList) . ") ORDER BY dUpload DESC LIMIT " . intval($iLimit), "%" . $sTerm . "%", "%" . $sTerm . "%");
-				return $wpdb->get_results($sql);
-			} else {
-				$sql = $wpdb->prepare("SELECT video.*, folder.sAccess, folder.sToken FROM " . $this->db_table_video . " as video
-			INNER JOIN " . $this->db_table_folder . " as folder ON video.iFolder = folder.iFolder
-			WHERE video.sName LIKE %s OR sServerCode LIKE %s ORDER BY dUpload DESC LIMIT " . intval($iLimit), "%" . $sTerm . "%", "%" . $sTerm . "%");
-				return $wpdb->get_results($sql);
+
+				$sPlaceholders = implode(',', array_fill(0, count($aFoldersList), '%d'));
+				$sWhereFolder  = " AND video.iFolder IN ($sPlaceholders)";
+				$aArgs         = array_merge($aArgs, $aFoldersList);
 			}
-		}
+
+			$aArgs[] = (int) $iLimit;
+
+			$sql = $wpdb->prepare(
+				"SELECT video.*, folder.sAccess, folder.sToken
+				FROM " . $this->db_table_video . " AS video
+				INNER JOIN " . $this->db_table_folder . " AS folder ON video.iFolder = folder.iFolder
+				WHERE (video.sName LIKE %s OR video.sServerCode LIKE %s)" . $sWhereFolder . "
+				ORDER BY video.dUpload DESC
+				LIMIT %d",
+				$aArgs
+			);
+
+			return $wpdb->get_results($sql);
+		}		
+
 
 		function get_videos_byPage($iPage, $iLimit, $sFilter = "") {
 			global $wpdb;
@@ -1638,7 +1691,7 @@
 				$aFolders = $wpdb->get_results($sql);
 				$aFoldersList = array();
 				foreach ($aFolders as $oFolder) {
-					$aFoldersList[] = $oFolder->iFolder;
+					$aFoldersList[] = (int) $oFolder->iFolder;
 				}
 				return $wpdb->get_results("SELECT video.*, folder.sAccess, folder.sToken FROM " . $this->db_table_video . " as video
 			INNER JOIN " . $this->db_table_folder . " as folder ON video.iFolder = folder.iFolder
@@ -1716,7 +1769,7 @@
 				$aFolders = $wpdb->get_results($sql);
 				$aFoldersList = array();
 				foreach ($aFolders as $oFolder) {
-					$aFoldersList[] = $oFolder->iFolder;
+					$aFoldersList[] = (int) $oFolder->iFolder;
 				}
 				return $wpdb->get_var("SELECT COUNT(*) FROM " . $this->db_table_video . "
 			WHERE iFolder IN ( " . implode(",", $aFoldersList) . ")");
